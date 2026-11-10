@@ -1,0 +1,15 @@
+.env
+.store
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+.playwright-cli/
+after-login.yml
+
+.DS_Store
+.pytest_cache/
+.mypy_cache/
