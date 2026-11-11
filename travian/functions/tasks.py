@@ -1,4 +1,4 @@
-"""Collect ready progressive-task rewards."""
+"""Collect ready progressive-task rewards and daily-quest chests."""
 
 from travian.modules.tasks import collect_rewards
 
@@ -8,7 +8,11 @@ name = "tasks"
 def run(page, params: dict) -> dict:
     if params.get("action") != "collect":
         return {"error": "unknown tasks action"}
-    return collect_rewards(page)
+    return collect_rewards(
+        page,
+        tasks=bool(params.get("tasks", True)),
+        daily=bool(params.get("daily", True)),
+    )
 
 
 def telegram_menu(context: dict):
@@ -20,6 +24,9 @@ def resolve_command(data: str, session: dict):
 
 
 def _line(item: dict) -> str:
+    if item.get("kind") == "daily":
+        detail = item.get("resources") or "chest"
+        return f"Collected daily quest: {detail}"
     parts = []
     if item.get("resources"):
         parts.append(f"{item['resources']} resources")

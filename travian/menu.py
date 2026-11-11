@@ -114,7 +114,7 @@ def on_callback(data: str, session: dict, chat_id) -> dict:
     if data == "go:party":
         return _task("celebration", {"action": "small"})
     if data == "go:tasks":
-        return _task("tasks", {"action": "collect"})
+        return _task("tasks", {"action": "collect", "tasks": True, "daily": True})
     if data.startswith("b:"):
         return buildings_command(data, session) or home_menu()
     if data.startswith("a:"):

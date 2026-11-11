@@ -33,7 +33,12 @@ DEFAULTS = {
             "use_inventory": False,
         },
         "adventure": {"enabled": False, "interval_min": 600, "interval_max": 900},
-        "tasks": {"enabled": False, "interval_min": 600, "interval_max": 900},
+        "tasks": {
+            "enabled": False,
+            "daily_enabled": False,
+            "interval_min": 600,
+            "interval_max": 900,
+        },
     },
     "notifications": {},
     "clocks": {},

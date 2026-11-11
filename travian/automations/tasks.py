@@ -10,17 +10,26 @@ RANGES = ((300, 600, "5-10 min"), (600, 900, "10-15 min"), (900, 1200, "15-20 mi
 
 def run(config: dict, now: float) -> dict | None:
     auto = config["automations"]["tasks"]
-    if not auto["enabled"]:
+    tasks_on = bool(auto["enabled"])
+    daily_on = bool(auto.get("daily_enabled"))
+    if not tasks_on and not daily_on:
         return None
     if now < float(config["clocks"].get("tasks") or 0):
         return None
-    return {"function": "tasks", "params": {"action": "collect"}}
+    return {
+        "function": "tasks",
+        "params": {"action": "collect", "tasks": tasks_on, "daily": daily_on},
+    }
 
 
 def telegram_menu(config: dict):
     auto = config["automations"]["tasks"]
     state = "on" if auto["enabled"] else "off"
-    rows = [[button(f"Tasks: {state}", "au:tasks:" + ("0" if auto["enabled"] else "1"))]]
+    daily = "on" if auto.get("daily_enabled") else "off"
+    rows = [
+        [button(f"Tasks: {state}", "au:tasks:" + ("0" if auto["enabled"] else "1"))],
+        [button(f"Daily quests: {daily}", "au:tasksd:" + ("0" if auto.get("daily_enabled") else "1"))],
+    ]
     ranges = []
     for low, high, label in RANGES:
         mark = "• " if auto["interval_min"] == low and auto["interval_max"] == high else ""
@@ -40,6 +49,16 @@ def resolve_command(data: str, session: dict):
                 config["clocks"]["tasks"] = 0
 
         update(mutate)
+        return {"type": "menu", "menu": "automations"}
+    if parts[:2] == ["au", "tasksd"] and len(parts) == 3:
+        enabled = parts[2] == "1"
+
+        def mutate_daily(config):
+            config["automations"]["tasks"]["daily_enabled"] = enabled
+            if enabled:
+                config["clocks"]["tasks"] = 0
+
+        update(mutate_daily)
         return {"type": "menu", "menu": "automations"}
     if parts[:2] == ["au", "tasksi"] and len(parts) == 4:
         low, high = int(parts[2]), int(parts[3])
