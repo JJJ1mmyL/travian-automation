@@ -1,0 +1,12 @@
+[project]
+name = "travian-automation"
+version = "0.1.0"
+description = "Overnight Travian bot controlled from Telegram"
+requires-python = ">=3.10"
+dependencies = [
+  "camoufox",
+  "certifi",
+]
+
+[tool.uv]
+package = false
