@@ -5,6 +5,7 @@ from travian.config import SERVER
 from travian.modules.buildings import (
     BUILD_PAGE,
     construction_result,
+    quote_construction,
     submit_construction,
 )
 
@@ -111,14 +112,76 @@ def read_resource_page(page) -> dict:
         "production_per_hour": production,
         "building_queue": raw["queue"],
         "fields": fields,
+        "incoming": read_incoming(page),
     }
+
+
+def read_incoming(page) -> list:
+    """Incoming attacks and raids on the page already open."""
+    try:
+        raw = page.evaluate(
+            """() => {
+                const table = document.querySelector('#movements');
+                if (!table) return [];
+                return [...table.querySelectorAll('tbody tr')].map((row) => {
+                    const img = row.querySelector('img');
+                    const classes = img ? String(img.className) : '';
+                    const kindMatch = classes.match(/\\batt\\d+\\b/) || classes.match(/\\bdef\\d+\\b/);
+                    const incoming = Boolean(row.querySelector('.a1, .a2, .a3'));
+                    return {
+                        incoming,
+                        kind: kindMatch ? kindMatch[0] : '',
+                        text: (row.innerText || '').replace(/\\s+/g, ' ').trim(),
+                    };
+                });
+            }"""
+        )
+    except Exception:
+        return []
+    attacks = []
+    for row in raw or []:
+        if not _incoming_attack(row):
+            continue
+        text = re.sub(r"\d+:\d{2}:\d{2}", "", row.get("text") or "")
+        text = re.sub(r"\s+", " ", text).strip()
+        kind = row.get("kind") or "attack"
+        attacks.append({"kind": kind, "text": text, "identity": f"{kind}|{text}"})
+    return attacks
+
+
+def _incoming_attack(row: dict) -> bool:
+    kind = row.get("kind") or ""
+    if kind in {"att2", "def1", "def2", "def3"}:
+        return False
+    if kind in {"att1", "att3"}:
+        return True
+    return bool(row.get("incoming")) and kind.startswith("att")
 
 
 def list_fields(page) -> list:
     return read_resource_page(page)["fields"]
 
 
-def upgrade_field(page, slot: int, *, watch_video: bool = False, use_inventory: bool = False) -> dict:
+def prepare_field(page, slot: int) -> dict:
+    if isinstance(slot, bool) or not isinstance(slot, int) or slot < 1 or slot > 18:
+        return {"status": "short", "message": "not a resource field", "kind": "field", "slot": slot, "name": ""}
+    field = next((item for item in list_fields(page) if item["slot"] == slot), None)
+    if field is None:
+        return {"status": "short", "message": "no such field", "kind": "field", "slot": slot, "name": ""}
+    page.goto(f"{BUILD_PAGE}?id={slot}", wait_until="domcontentloaded")
+    scope = page.locator("#build")
+    try:
+        scope.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+    except Exception:
+        quote = {"status": "short", "message": "not available"}
+    else:
+        quote = quote_construction(page, scope)
+    return {**quote, "kind": "field", "slot": slot, "gid": field["gid"], "name": field["name"]}
+
+
+def upgrade_field(
+    page, slot: int, *, watch_video: bool = False, use_inventory: bool = False, video_optional: bool = False
+) -> dict:
     """Upgrade one resource field. Slots are 1 through 18."""
     if isinstance(slot, bool) or not isinstance(slot, int) or slot < 1 or slot > 18:
         return construction_result(
@@ -159,14 +222,16 @@ def upgrade_field(page, slot: int, *, watch_video: bool = False, use_inventory: 
             use_inventory=use_inventory,
             reason="not available",
         )
-    submitted = submit_construction(page, scope, watch_video=watch_video, use_inventory=use_inventory)
+    submitted = submit_construction(
+        page, scope, watch_video=watch_video, use_inventory=use_inventory, video_optional=video_optional
+    )
     return construction_result(
         started=submitted["started"],
         slot=slot,
         gid=field["gid"],
         name=field["name"],
         level=field["level"],
-        watch_video=watch_video,
+        watch_video=submitted.get("watch_video", watch_video),
         use_inventory=use_inventory,
         reason=submitted["reason"],
     )

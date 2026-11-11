@@ -1,5 +1,6 @@
 .env
 .store
+bot_config.json
 
 __pycache__/
 *.py[cod]
