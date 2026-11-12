@@ -148,17 +148,17 @@ def queue_is_full(*, kind: str, fields: int, buildings: int, plus: bool, roman: 
 
 def _queue_state(page) -> dict:
     return page.evaluate(
-        """() => {
+        r"""() => {
             const html = document.documentElement.innerHTML;
-            const tribeMatch = html.match(/"tribeId":\\s*"?(\\d+)"?/);
+            const tribeMatch = html.match(/"tribeId":\s*"?(\d+)"?/);
             const names = [...document.querySelectorAll(".buildingList li .name")].map((el) => {
                 const clone = el.cloneNode(true);
                 clone.querySelectorAll(".lvl").forEach((node) => node.remove());
-                return clone.textContent.replace(/\\s+/g, " ").trim();
+                return clone.textContent.replace(/\s+/g, " ").trim();
             });
             return {
                 tribe: tribeMatch ? Number(tribeMatch[1]) : null,
-                plus: /Your Plus Account expires/.test((document.body && document.body.innerText) || ""),
+                plus: /"travianPlus"\s*:\s*\{\s*"isActive"\s*:\s*true/.test(html),
                 names,
             };
         }"""

@@ -13,8 +13,11 @@ TABS = ("village", "general")
 READY = "#tasks .task.achieved button.collect:not(.disabled):not(.collected)"
 DAILY_LINK = "#navigation a.dailyQuests[accesskey='7']"
 DAILY_READY = f"{DAILY_LINK} .indicator"
-CHEST_READY = "#dailyQuests .rewardImage.achieved"
+PROGRESS_READY = "#dailyQuests .dailyProgress .rewardImage.achieved"
 COLLECT_DAILY = "#dailyQuests button.collectRewards"
+CLAIM = "#dailyQuests .screen.active button.collect.collectable"
+CLAIMED = "#dailyQuests .screen.active button.collect.collected"
+BACK = "#dailyQuests .screen.active button.backButton"
 
 
 def clean_text(text: str) -> str:
@@ -42,19 +45,15 @@ def _daily_marked(page) -> bool:
     indicator = page.locator(DAILY_READY)
     if indicator.count() == 0 or not indicator.first.is_visible():
         return False
+    class_name = indicator.first.get_attribute("class") or ""
+    if "hidden" in class_name.split():
+        return False
     return clean_text(indicator.first.inner_text()) == "!"
 
 
 def _tasks_marked(page) -> bool:
     button = page.locator("#questmasterButton.claimable")
     return button.count() > 0 and button.first.is_visible()
-
-
-def _chest_label(class_name: str) -> str:
-    match = re.search(r"reward(\d+)", class_name or "")
-    if match:
-        return f"{match.group(1)} points"
-    return "chest"
 
 
 def _close_daily(page) -> None:
@@ -77,34 +76,54 @@ def _collect_daily(page) -> tuple[list, list]:
         failed.append({"title": "Daily quests", "kind": "daily", "reason": "dialog did not open"})
         return collected, failed
     try:
-        page.locator(CHEST_READY).first.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+        page.locator(PROGRESS_READY).first.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
     except Exception:
         _close_daily(page)
         return collected, failed
     clicked = False
-    while True:
-        chests = page.locator(CHEST_READY)
-        count = chests.count()
-        if count == 0:
-            break
-        labels = [_chest_label(chests.nth(index).get_attribute("class") or "") for index in range(count)]
+    while page.locator(PROGRESS_READY).count():
         if clicked:
             _pause(page, 3, 8)
+        before = page.locator(PROGRESS_READY).count()
         try:
             page.locator(COLLECT_DAILY).click()
+            page.locator(CLAIM).wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+            label = _reward_label(page)
+            _pause(page, 2, 5)
+            page.locator(CLAIM).click()
+            page.locator(CLAIMED).wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+            page.locator(BACK).click()
             page.wait_for_function(
-                """(before) => document.querySelectorAll('#dailyQuests .rewardImage.achieved').length < before""",
-                arg=count,
+                """(before) => document.querySelectorAll(
+                    '#dailyQuests .dailyProgress .rewardImage.achieved'
+                ).length < before""",
+                arg=before,
                 timeout=WAIT_FOR_TIMEOUT_MS,
             )
         except Exception:
             failed.append({"title": "Daily quests", "kind": "daily", "reason": "collect did not finish"})
             break
-        for label in labels:
-            collected.append({"title": "Daily quest", "kind": "daily", "resources": label})
+        collected.append({"title": "Daily quest", "kind": "daily", "resources": label})
         clicked = True
     _close_daily(page)
     return collected, failed
+
+
+def _reward_label(page) -> str:
+    screen = page.locator("#dailyQuests .screen.active")
+    points = ""
+    prize = ""
+    points_el = screen.locator(".points")
+    if points_el.count():
+        points = clean_text(points_el.first.inner_text())
+    prize_el = screen.locator(".iconValueBox")
+    if prize_el.count():
+        prize = clean_text(prize_el.first.inner_text())
+    if points and prize:
+        return f"{points} points: {prize}"
+    if points:
+        return f"{points} points"
+    return prize or "chest"
 
 
 def _open_tab(page, tab: str) -> str:
