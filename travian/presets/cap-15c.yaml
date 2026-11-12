@@ -1,0 +1,41 @@
+# 15c cap lv18 from the Village planner. Fields stay capped at 10 and are not part of this list.
+# Only the mill and bakery are built here, so the sawmill, brickyard, and foundry stay out.
+# Palace 3 is added so the Stonemason's Lodge can be built, and one warehouse is left out.
+# Choosing this preset builds a Palace. Warehouse finishes at 6x20. Granary finishes at 7x20.
+
+- kind: building
+  name: Rally Point
+  goal: 10
+- kind: building
+  name: Main Building
+  goal: 20
+- kind: building
+  name: Embassy
+  goal: 1
+- kind: building
+  name: Palace
+  goal: 3
+- kind: building
+  name: Grain Mill
+  goal: 5
+- kind: building
+  name: Bakery
+  goal: 5
+- kind: building
+  name: Stonemason's Lodge
+  goal: 20
+- kind: building
+  name: Marketplace
+  goal: 20
+- kind: building
+  name: Trade Office
+  goal: 16
+- kind: building
+  name: Wall
+  goal: 20
+- kind: building
+  name: Warehouse
+  goal: 20x6
+- kind: building
+  name: Granary
+  goal: 20x7

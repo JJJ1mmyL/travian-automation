@@ -1,0 +1,59 @@
+# Hammer from the Village planner. Fields are not part of this list.
+# Academy 15, Armoury 3, and Embassy 1 are added so the Stable, Hospital, Workshop, and Palace can be built.
+# Treasury, Town Hall, and one granary are left out so those three fit. Rally Point finishes at 15.
+# Choosing this preset builds a Palace. Warehouse and granary finish at 3x20 and 3x20. No wall.
+
+- kind: building
+  name: Rally Point
+  goal: 1
+- kind: building
+  name: Main Building
+  goal: 20
+- kind: building
+  name: Barracks
+  goal: 20
+- kind: building
+  name: Great Barracks
+  goal: 20
+- kind: building
+  name: Academy
+  goal: 15
+- kind: building
+  name: Armoury
+  goal: 3
+- kind: building
+  name: Stable
+  goal: 20
+- kind: building
+  name: Great Stable
+  goal: 20
+- kind: building
+  name: Embassy
+  goal: 1
+- kind: building
+  name: Palace
+  goal: 20
+- kind: building
+  name: Workshop
+  goal: 20
+- kind: building
+  name: Hospital
+  goal: 20
+- kind: building
+  name: Marketplace
+  goal: 20
+- kind: building
+  name: Trade Office
+  goal: 20
+- kind: building
+  name: Rally Point
+  goal: 15
+- kind: building
+  name: Tournament Square
+  goal: 20
+- kind: building
+  name: Warehouse
+  goal: 20x3
+- kind: building
+  name: Granary
+  goal: 20x3

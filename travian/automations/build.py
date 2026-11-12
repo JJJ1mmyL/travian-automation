@@ -1,6 +1,7 @@
 """Shared settler-preset run. One buildings advance per interval."""
 
 from travian.keyboard import button
+from travian.presets.order import preset_names
 from travian.store import update
 
 name = "build"
@@ -43,6 +44,19 @@ def telegram_menu(config: dict):
 def resolve_command(data: str, session: dict):
     parts = data.split(":")
     if data == "au:preset":
+        names = preset_names()
+
+        def mutate(config):
+            current = config["automations"]["build"].get("preset") or "settler"
+            if not names:
+                return
+            nxt = names[0] if current not in names else names[(names.index(current) + 1) % len(names)]
+            if nxt == current:
+                return
+            config["automations"]["build"]["preset"] = nxt
+            config["automations"]["build"]["cursor"] = {"line": 0, "progress": 0}
+
+        update(mutate)
         return {"type": "menu", "menu": "automations"}
     if parts[:2] == ["au", "build"] and len(parts) == 3:
         enabled = parts[2] == "1"

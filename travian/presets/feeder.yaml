@@ -1,0 +1,53 @@
+# Gold +25%, no oases, fields capped at 10.
+# Field order comes from the Optimal Village builder for the village on screen.
+# The buildings are the 6-crop 1000 CP plan: 1003/day when the fields are 4/4/4/6 at level 10.
+# The builder stops the mill, sawmill, brickyard, foundry, and bakery at 5. Armoury stops at 3, which the Stable requires.
+# Workshop and Trade Office are left out so Barracks and Armoury fit in the 22 slots.
+# Warehouse and granary finish at 2x20 and 3x20. Earlier storage is added when the next cost would not fit.
+
+- kind: building
+  name: Rally Point
+  goal: 1
+- kind: roi
+- kind: building
+  name: Barracks
+  goal: 3
+- kind: building
+  name: Academy
+  goal: 20
+- kind: building
+  name: Armoury
+  goal: 3
+- kind: building
+  name: Stable
+  goal: 20
+- kind: building
+  name: Embassy
+  goal: 20
+- kind: building
+  name: Residence
+  goal: 10
+- kind: building
+  name: Hero's Mansion
+  goal: 10
+- kind: building
+  name: Town Hall
+  goal: 13
+- kind: building
+  name: Marketplace
+  goal: 20
+- kind: building
+  name: Rally Point
+  goal: 20
+- kind: building
+  name: Main Building
+  goal: 20
+- kind: building
+  name: Wall
+  goal: 10
+- kind: building
+  name: Warehouse
+  goal: 20x2
+- kind: building
+  name: Granary
+  goal: 20x3

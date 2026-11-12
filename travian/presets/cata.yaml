@@ -1,0 +1,26 @@
+# Cata village from the Village planner, plus the Optimal Village builder.
+# The bakery prerequisite raises the Main Building to 10, above the planner's 5.
+# Warehouse and granary finish at 8.
+
+- kind: building
+  name: Rally Point
+  goal: 1
+- kind: roi
+- kind: building
+  name: Barracks
+  goal: 3
+- kind: building
+  name: Academy
+  goal: 15
+- kind: building
+  name: Workshop
+  goal: 10
+- kind: building
+  name: Rally Point
+  goal: 10
+- kind: building
+  name: Warehouse
+  goal: 8
+- kind: building
+  name: Granary
+  goal: 8

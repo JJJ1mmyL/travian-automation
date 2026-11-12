@@ -1,0 +1,22 @@
+# Storage from the Village planner. Fields are not part of this list.
+# Town Hall is left out. It needs an Academy, and an Academy needs a Barracks, which would replace granaries.
+# Warehouse and granary finish at 5x20 and 11x20.
+
+- kind: building
+  name: Rally Point
+  goal: 10
+- kind: building
+  name: Main Building
+  goal: 20
+- kind: building
+  name: Marketplace
+  goal: 20
+- kind: building
+  name: Trade Office
+  goal: 20
+- kind: building
+  name: Warehouse
+  goal: 20x5
+- kind: building
+  name: Granary
+  goal: 20x11

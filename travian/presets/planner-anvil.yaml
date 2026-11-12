@@ -1,0 +1,49 @@
+# Village planner Anvil. This is not anvil.yaml.
+# Fields and the five resource buildings come from the Optimal Village builder.
+# Academy 15 and Armoury 3 are added so the Stable and Hospital can be built.
+# Trade Office and Town Hall are left out so those two fit. Rally Point finishes at 15 for the Tournament Square.
+# Warehouse and granary finish at 2x20 and 3x20. No wall.
+
+- kind: building
+  name: Rally Point
+  goal: 1
+- kind: roi
+- kind: building
+  name: Barracks
+  goal: 20
+- kind: building
+  name: Academy
+  goal: 15
+- kind: building
+  name: Armoury
+  goal: 3
+- kind: building
+  name: Stable
+  goal: 20
+- kind: building
+  name: Workshop
+  goal: 10
+- kind: building
+  name: Hospital
+  goal: 15
+- kind: building
+  name: Residence
+  goal: 10
+- kind: building
+  name: Marketplace
+  goal: 20
+- kind: building
+  name: Main Building
+  goal: 20
+- kind: building
+  name: Rally Point
+  goal: 15
+- kind: building
+  name: Tournament Square
+  goal: 15
+- kind: building
+  name: Warehouse
+  goal: 20x2
+- kind: building
+  name: Granary
+  goal: 20x3

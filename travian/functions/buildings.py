@@ -14,7 +14,7 @@ from travian.modules.buildings import (
 from travian.modules.celebration import start_small
 from travian.modules.resources import list_fields, prepare_field, read_resource_page, upgrade_field
 from travian.modules.training import train_settler
-from travian.presets.order import load_steps, next_step, step_label
+from travian.presets.order import load_steps, next_step, preset_path, step_label
 from travian.store import load
 
 name = "buildings"
@@ -74,7 +74,8 @@ def _advance(page, watch_video: bool = False, use_inventory: bool = False) -> di
     cursor = dict(config["automations"]["build"]["cursor"])
     village = read_resource_page(page)
     buildings = list_buildings(page)
-    decision = next_step(load_steps(), cursor, village["fields"], buildings)
+    preset = config["automations"]["build"].get("preset") or "settler"
+    decision = next_step(load_steps(preset_path(preset)), cursor, village["fields"], buildings)
     if decision["status"] == "done":
         return {
             "action": "advance",
@@ -101,7 +102,7 @@ def _advance(page, watch_video: bool = False, use_inventory: bool = False) -> di
     if _queue_kind(action) and step_queue_full(page, _queue_kind(action)):
         return _quiet(decision["cursor"])
     performed = _perform(page, action, watch_video, use_inventory)
-    label = step_label(decision["step"])
+    label = action.get("label") or step_label(decision["step"])
     if not performed.get("started"):
         reason = performed.get("reason") or "not started"
         if _quiet_wait(reason):

@@ -4,6 +4,7 @@ import re
 
 from travian.browser import WAIT_FOR_TIMEOUT_MS
 from travian.config import SERVER
+from travian.presets.order import canon
 
 name = "buildings"
 
@@ -37,6 +38,8 @@ BUILDING_NAMES = {
     26: "Palace",
     27: "Treasury",
     28: "Trade Office",
+    29: "Great Barracks",
+    30: "Great Stable",
     31: "City Wall",
     32: "Earth Wall",
     33: "Palisade",
@@ -63,6 +66,16 @@ def parse_int(text: str) -> int:
 
 def normalize_name(text: str) -> str:
     return clean_text(text).replace("’", "'").replace("‘", "'").lower()
+
+
+def bare_name(text: str) -> str:
+    """Drop a duplicate index such as '2. Cranny'."""
+    return re.sub(r"^\d+\.\s*", "", normalize_name(text))
+
+
+def gids_for(name: str) -> set:
+    wanted = canon(name)
+    return {gid for gid, label in BUILDING_NAMES.items() if canon(label) == wanted}
 
 
 def building_name(gid: int | None) -> str:
@@ -547,7 +560,8 @@ def _find_slot(buildings: list, slot: int) -> dict | None:
 def _open_contract(page, slot: int, building: str):
     needle = str(building).strip()
     wanted_gid = int(needle) if needle.isdigit() else None
-    wanted_name = normalize_name(needle)
+    wanted_gids = {wanted_gid} if wanted_gid is not None else gids_for(needle)
+    wanted_name = bare_name(needle)
     for category in (1, 2, 3):
         page.goto(
             f"{BUILD_PAGE}?id={slot}&category={category}",
@@ -564,9 +578,9 @@ def _open_contract(page, slot: int, building: str):
             gid = int(match.group(1)) if match else 0
             heading = wrapper.locator("h2")
             label = clean_text(heading.inner_text()) if heading.count() else ""
-            if wanted_gid is not None and gid == wanted_gid:
+            if gid and gid in wanted_gids:
                 return wrapper, gid, label
-            if wanted_gid is None and normalize_name(label) == wanted_name:
+            if wanted_gid is None and bare_name(label) == wanted_name:
                 return wrapper, gid, label
     return None, None, ""
 

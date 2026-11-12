@@ -1,0 +1,28 @@
+# Gold +25%, no oases, fields capped at 10. Not the capital.
+# Field order comes from the Optimal Village builder for the village on screen.
+# On a 6-crop the floor is 2849 net crop/h: level-10 cropland, Gold +25%, mill 5, bakery 5, minus population.
+# Rally Point 1, Main Building 10, Wall 20, Residence 10, Barracks 3, Academy 5, Armoury 10.
+# Storage is added only when the next cost would not fit.
+
+- kind: building
+  name: Rally Point
+  goal: 1
+- kind: roi
+- kind: building
+  name: Barracks
+  goal: 3
+- kind: building
+  name: Academy
+  goal: 5
+- kind: building
+  name: Armoury
+  goal: 10
+- kind: building
+  name: Residence
+  goal: 10
+- kind: building
+  name: Main Building
+  goal: 10
+- kind: building
+  name: Wall
+  goal: 20
