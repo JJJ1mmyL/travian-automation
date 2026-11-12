@@ -1,13 +1,13 @@
 """Optimal Village builder, ported from traviantools UltimateROI.vue.
 
 Gold is on, oases are off, and fields stop at level 10. Oasis and Waterworks
-steps are not part of this loop. Costs are the tool's own JSON.
+steps are not part of this loop. Costs live in travian/data.
 """
 
 import json
 from pathlib import Path
 
-_DATA = Path(__file__).resolve().parents[2] / "traviantools" / "src" / "data"
+_DATA = Path(__file__).resolve().parents[1] / "data"
 BUILDINGS = json.loads((_DATA / "buildings.json").read_text())
 PRODUCTION = json.loads((_DATA / "production.json").read_text())
 
