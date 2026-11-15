@@ -22,6 +22,8 @@ def resolve_command(data: str, session: dict):
 def to_telegram_message(result: dict) -> str:
     if result.get("error"):
         return f"Farm lists failed: {result['error']}"
+    pruned = result.get("deactivated") or 0
+    prune_note = f" Deactivated unsafe: {pruned}." if pruned else ""
     if result.get("started"):
-        return f"Farm lists started. Raids sent: {result.get('raids_sent', 0)}"
-    return f"Farm lists not started: {result.get('reason', 'unknown')}"
+        return f"Farm lists started. Raids sent: {result.get('raids_sent', 0)}.{prune_note}"
+    return f"Farm lists not started: {result.get('reason', 'unknown')}.{prune_note}"

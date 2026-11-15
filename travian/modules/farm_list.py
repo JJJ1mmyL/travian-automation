@@ -1,11 +1,21 @@
 """Farm list. Check Gold Club, list farm lists, and start them."""
 
+import random
+
+from travian.browser import WAIT_FOR_TIMEOUT_MS
 from travian.config import SERVER
 
 name = "farm_list"
 
 DORF1 = f"{SERVER}/dorf1.php"
 FARM_LIST = f"{SERVER}/build.php?id=39&gid=16&tt=99"
+
+# Last-raid icon for a full win with no troop losses (green cross).
+SAFE_LAST_RAID = "attack_won_withoutLosses_small"
+
+
+def _pause(page, low: int = 1, high: int = 3) -> None:
+    page.wait_for_timeout(random.randint(low, high) * 1000)
 
 
 def _read_gold_club(page):
@@ -84,6 +94,101 @@ def _is_disabled(button) -> bool:
     return "disabled" in classes
 
 
+def _slot_id(row) -> str | None:
+    checkbox = row.locator('input[name="selectOne"]')
+    if checkbox.count() == 0:
+        return None
+    return checkbox.first.get_attribute("data-slot-id")
+
+
+def _last_raid_classes(row) -> list[str]:
+    icon = row.locator("i.lastRaidState")
+    if icon.count() == 0:
+        return []
+    return (icon.first.get_attribute("class") or "").split()
+
+
+def _should_deactivate(row) -> bool:
+    """Active targets with a last raid that is not without-loss. No last raid → keep."""
+    classes = _last_raid_classes(row)
+    if not classes:
+        return False
+    return SAFE_LAST_RAID not in classes
+
+
+def _next_unsafe_active_row(scope):
+    """Return the first active slot whose last raid is not a green without-loss cross."""
+    rows = scope.locator("tr.slot:not(.disabled)")
+    for index in range(rows.count()):
+        row = rows.nth(index)
+        if _should_deactivate(row):
+            return row
+    return None
+
+
+def _dismiss_context_menu(page) -> None:
+    wrapper = page.locator(".contextMenuWrapper")
+    if wrapper.count() == 0:
+        return
+    page.keyboard.press("Escape")
+    try:
+        wrapper.first.wait_for(state="hidden", timeout=WAIT_FOR_TIMEOUT_MS)
+    except Exception:
+        page.locator("body").click(position={"x": 5, "y": 5}, force=True)
+
+
+def _deactivate_row(page, row) -> dict | None:
+    slot_id = _slot_id(row)
+    if not slot_id:
+        return None
+
+    _dismiss_context_menu(page)
+    menu = row.locator("td.openContextMenu a")
+    if menu.count() == 0:
+        return None
+    menu.first.click(timeout=WAIT_FOR_TIMEOUT_MS)
+
+    button = page.locator(".contextMenuWrapper button.entry.deactivate")
+    if button.count() == 0:
+        _dismiss_context_menu(page)
+        return None
+    button.first.click(timeout=WAIT_FOR_TIMEOUT_MS)
+
+    disabled = page.locator(f'tr.slot.disabled:has(input[data-slot-id="{slot_id}"])')
+    try:
+        disabled.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+    except Exception:
+        return None
+    return {"slot_id": slot_id}
+
+
+def deactivate_unsafe_active_targets(page, *, list_id: int | None = None) -> dict:
+    """Before sending, turn off active targets whose last raid was not without loss."""
+    _ensure_farm_lists(page)
+    scope = page.locator("#rallyPointFarmList")
+    if list_id is not None:
+        scope = page.locator(f'.farmListWrapper:has([data-list="{list_id}"])')
+        if scope.count() == 0:
+            return {"deactivated": 0, "targets": [], "reason": "farm list missing"}
+
+    deactivated = []
+    while True:
+        row = _next_unsafe_active_row(scope)
+        if row is None:
+            break
+        result = _deactivate_row(page, row)
+        if result is None:
+            return {
+                "deactivated": len(deactivated),
+                "targets": deactivated,
+                "reason": "deactivate control missing",
+            }
+        deactivated.append(result)
+        _pause(page, 1, 3)
+
+    return {"deactivated": len(deactivated), "targets": deactivated}
+
+
 def _raids_from_send(payload: dict) -> dict:
     raids_sent = 0
     errors = []
@@ -121,25 +226,71 @@ def start_farm_list(page, *, list_id: int | None = None, name: str | None = None
     if chosen is None:
         return {"started": False, "raids_sent": 0, "reason": "no farm list"}
 
+    pruned = deactivate_unsafe_active_targets(page, list_id=chosen["id"])
+    if pruned.get("reason"):
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": pruned["reason"],
+            "deactivated": pruned.get("deactivated", 0),
+            "farm_list": chosen,
+        }
+
     wrapper = page.locator(f'.farmListWrapper:has([data-list="{chosen["id"]}"])')
     button = wrapper.locator(".farmListHeader button.startFarmList")
     if button.count() == 0:
-        return {"started": False, "raids_sent": 0, "reason": "start button missing", "farm_list": chosen}
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": "start button missing",
+            "deactivated": pruned["deactivated"],
+            "farm_list": chosen,
+        }
     if _is_disabled(button):
-        return {"started": False, "raids_sent": 0, "reason": "disabled", "farm_list": chosen}
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": "disabled",
+            "deactivated": pruned["deactivated"],
+            "farm_list": chosen,
+        }
 
+    _pause(page, 1, 2)
     result = _click_and_count_raids(page, button)
     result["farm_list"] = chosen
+    result["deactivated"] = pruned["deactivated"]
     return result
 
 
 def start_all_farm_lists(page) -> dict:
     _ensure_farm_lists(page)
+    pruned = deactivate_unsafe_active_targets(page)
+    if pruned.get("reason"):
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": pruned["reason"],
+            "deactivated": pruned.get("deactivated", 0),
+        }
+
     button = page.locator("button.startAllFarmLists")
     if button.count() == 0:
-        return {"started": False, "raids_sent": 0, "reason": "start button missing"}
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": "start button missing",
+            "deactivated": pruned["deactivated"],
+        }
     if _is_disabled(button):
-        return {"started": False, "raids_sent": 0, "reason": "disabled"}
+        return {
+            "started": False,
+            "raids_sent": 0,
+            "reason": "disabled",
+            "deactivated": pruned["deactivated"],
+        }
+
+    _pause(page, 1, 2)
     result = _click_and_count_raids(page, button)
     result["farm_lists"] = list_farm_lists(page)
+    result["deactivated"] = pruned["deactivated"]
     return result
