@@ -1,6 +1,8 @@
 """Farm list. Check Gold Club, list farm lists, and start them."""
 
 import random
+import re
+import time
 
 from travian.browser import WAIT_FOR_TIMEOUT_MS
 from travian.config import SERVER
@@ -12,6 +14,25 @@ FARM_LIST = f"{SERVER}/build.php?id=39&gid=16&tt=99"
 
 # Last-raid icon for a full win with no troop losses (green cross).
 SAFE_LAST_RAID = "attack_won_withoutLosses_small"
+# Interval encoded in the list title, e.g. "inf (15 mins)" or "spawn rainbow - (5 mins)".
+MINS_IN_NAME = re.compile(r"(\d+)\s*mins?", re.IGNORECASE)
+
+
+def minutes_from_name(list_name: str) -> int | None:
+    match = MINS_IN_NAME.search(list_name or "")
+    return int(match.group(1)) if match else None
+
+
+def farm_list_due(farm_list: dict, last_sent: dict, now: float | None = None) -> bool:
+    """Send when no interval in the name, never sent, or the named minutes have elapsed."""
+    mins = minutes_from_name(farm_list.get("name") or "")
+    if mins is None:
+        return True
+    sent = last_sent.get(str(farm_list["id"]))
+    if sent is None:
+        return True
+    now = time.time() if now is None else now
+    return (now - float(sent)) > mins * 60
 
 
 def _pause(page, low: int = 1, high: int = 3) -> None:
@@ -262,35 +283,88 @@ def start_farm_list(page, *, list_id: int | None = None, name: str | None = None
     return result
 
 
-def start_all_farm_lists(page) -> dict:
-    _ensure_farm_lists(page)
-    pruned = deactivate_unsafe_active_targets(page)
-    if pruned.get("reason"):
-        return {
-            "started": False,
-            "raids_sent": 0,
-            "reason": pruned["reason"],
-            "deactivated": pruned.get("deactivated", 0),
-        }
+def start_due_farm_lists(page, *, last_sent: dict | None = None, now: float | None = None) -> dict:
+    """Start each farm list that is due from its name interval and last_sent map."""
+    now = time.time() if now is None else now
+    last_sent = {str(key): float(value) for key, value in (last_sent or {}).items()}
+    lists = list_farm_lists(page)
+    started = []
+    skipped = []
+    raids_sent = 0
+    deactivated = 0
+    updated_last_sent = dict(last_sent)
 
-    button = page.locator("button.startAllFarmLists")
-    if button.count() == 0:
-        return {
-            "started": False,
-            "raids_sent": 0,
-            "reason": "start button missing",
-            "deactivated": pruned["deactivated"],
-        }
-    if _is_disabled(button):
-        return {
-            "started": False,
-            "raids_sent": 0,
-            "reason": "disabled",
-            "deactivated": pruned["deactivated"],
-        }
+    for farm_list in lists:
+        key = str(farm_list["id"])
+        mins = minutes_from_name(farm_list.get("name") or "")
+        if not farm_list_due(farm_list, last_sent, now):
+            skipped.append(
+                {
+                    "farm_list": farm_list,
+                    "reason": "not due",
+                    "interval_min": mins,
+                    "last_sent": last_sent.get(key),
+                }
+            )
+            continue
 
-    _pause(page, 1, 2)
-    result = _click_and_count_raids(page, button)
-    result["farm_lists"] = list_farm_lists(page)
-    result["deactivated"] = pruned["deactivated"]
+        pruned = deactivate_unsafe_active_targets(page, list_id=farm_list["id"])
+        deactivated += pruned.get("deactivated", 0)
+        if pruned.get("reason"):
+            skipped.append(
+                {
+                    "farm_list": farm_list,
+                    "reason": pruned["reason"],
+                    "interval_min": mins,
+                    "last_sent": last_sent.get(key),
+                }
+            )
+            continue
+
+        wrapper = page.locator(f'.farmListWrapper:has([data-list="{farm_list["id"]}"])')
+        button = wrapper.locator(".farmListHeader button.startFarmList")
+        if button.count() == 0:
+            skipped.append({"farm_list": farm_list, "reason": "start button missing", "interval_min": mins})
+            continue
+        if _is_disabled(button):
+            skipped.append({"farm_list": farm_list, "reason": "disabled", "interval_min": mins})
+            continue
+
+        _pause(page, 1, 2)
+        send = _click_and_count_raids(page, button)
+        sent_at = time.time()
+        updated_last_sent[key] = sent_at
+        raids_sent += send.get("raids_sent", 0)
+        started.append(
+            {
+                "farm_list": farm_list,
+                "raids_sent": send.get("raids_sent", 0),
+                "reason": send.get("reason"),
+                "interval_min": mins,
+                "last_sent": sent_at,
+            }
+        )
+        _pause(page, 2, 4)
+
+    result = {
+        "started": bool(started),
+        "raids_sent": raids_sent,
+        "deactivated": deactivated,
+        "lists_started": started,
+        "lists_skipped": skipped,
+        "last_sent": updated_last_sent,
+        "farm_lists": lists,
+    }
+    if not started:
+        if skipped and all(item.get("reason") == "not due" for item in skipped):
+            result["reason"] = "nothing due"
+        elif skipped:
+            result["reason"] = skipped[0].get("reason") or "nothing started"
+        else:
+            result["reason"] = "no farm list"
     return result
+
+
+def start_all_farm_lists(page) -> dict:
+    """Start every list as if none were sent yet (all due)."""
+    return start_due_farm_lists(page, last_sent={}, now=time.time())

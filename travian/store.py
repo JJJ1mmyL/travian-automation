@@ -22,7 +22,12 @@ EMPTY_FLAGS = {
 DEFAULTS = {
     "allow_chat_ids": [],
     "automations": {
-        "farm_list": {"enabled": False, "interval_min": 600, "interval_max": 900},
+        "farm_list": {
+            "enabled": False,
+            "interval_min": 600,
+            "interval_max": 900,
+            "last_sent": {},
+        },
         "build": {
             "enabled": False,
             "interval_min": 60,
@@ -73,6 +78,13 @@ def _merge(saved: dict) -> dict:
             current["cursor"] = {
                 "line": int(cursor.get("line") or 0),
                 "progress": int(cursor.get("progress") or 0),
+            }
+        if "last_sent" in defaults:
+            raw = current.get("last_sent") or {}
+            current["last_sent"] = {
+                str(key): float(value)
+                for key, value in raw.items()
+                if value is not None
             }
         data["automations"][name] = current
     data["notifications"] = {

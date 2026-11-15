@@ -5,7 +5,7 @@ from travian.keyboard import button
 from travian.store import update
 
 name = "farm_list"
-RANGES = ((300, 600, "5-10 min"), (600, 900, "10-15 min"), (900, 1200, "15-20 min"))
+RANGES = ((60, 180, "1-3 min"), (180, 300, "3-5 min"), (300, 420, "5-7 min"))
 
 
 def run(config: dict, now: float) -> dict | None:
