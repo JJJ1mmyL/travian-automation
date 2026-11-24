@@ -158,6 +158,41 @@ def _dismiss_context_menu(page) -> None:
         page.locator("body").click(position={"x": 5, "y": 5}, force=True)
 
 
+def _farm_list_wrapper(page, list_id: int):
+    return page.locator(f'.farmListWrapper:has([data-list="{list_id}"])')
+
+
+def _ensure_farm_list_expanded(page, list_id: int) -> bool:
+    """Expand a farm list so slot rows (and last-raid icons) are in the DOM."""
+    wrapper = _farm_list_wrapper(page, list_id)
+    if wrapper.count() == 0:
+        return False
+    classes = (wrapper.first.get_attribute("class") or "").split()
+    if "expanded" in classes:
+        return True
+    if "collapsed" not in classes:
+        return False
+
+    toggle = wrapper.locator("a.expandCollapse")
+    if toggle.count() == 0:
+        return False
+    toggle.first.click(timeout=WAIT_FOR_TIMEOUT_MS)
+    _pause(page, 1, 2)
+    expanded = page.locator(f'.farmListWrapper.expanded:has([data-list="{list_id}"])')
+    try:
+        expanded.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+    except Exception:
+        return False
+
+    table = expanded.locator("table.slots")
+    if table.count() and "noSlots" not in ((table.first.get_attribute("class") or "").split()):
+        try:
+            expanded.locator("tr.slot").first.wait_for(timeout=WAIT_FOR_TIMEOUT_MS)
+        except Exception:
+            return False
+    return True
+
+
 def _deactivate_row(page, row) -> dict | None:
     slot_id = _slot_id(row)
     if not slot_id:
@@ -188,9 +223,12 @@ def deactivate_unsafe_active_targets(page, *, list_id: int | None = None) -> dic
     _ensure_farm_lists(page)
     scope = page.locator("#rallyPointFarmList")
     if list_id is not None:
-        scope = page.locator(f'.farmListWrapper:has([data-list="{list_id}"])')
+        scope = _farm_list_wrapper(page, list_id)
         if scope.count() == 0:
             return {"deactivated": 0, "targets": [], "reason": "farm list missing"}
+        if not _ensure_farm_list_expanded(page, list_id):
+            return {"deactivated": 0, "targets": [], "reason": "expand failed"}
+        scope = _farm_list_wrapper(page, list_id)
 
     deactivated = []
     while True:
