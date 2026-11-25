@@ -17,7 +17,7 @@ A Camoufox browser session that logs into one Travian account and takes orders f
 - A Travian account on the server you set in `.env`
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 
-The browser binary is downloaded separately after the Python packages install. Camoufox needs a normal desktop session so the game window can open.
+The browser binary is downloaded separately after the Python packages install. The bot runs Camoufox in headed mode, so start it from a GUI session where the game window can open.
 
 ## Install
 
@@ -43,6 +43,8 @@ Fill in `.env`:
 Leave `TELEGRAM_CHAT_ID` empty and set `JOIN_PASSCODE` to join from Telegram instead. Do not commit `.env`.
 
 ## Start
+
+Run this from a GUI session. Headed mode opens a visible Firefox window and stays on that display.
 
 ```bash
 uv run python bot.py
