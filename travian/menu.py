@@ -20,7 +20,7 @@ NOTIFY_FLAGS = (
 def home_menu() -> dict:
     return {
         "type": "menu",
-        "text": "Sleep bot",
+        "text": "Travian Bot",
         "buttons": [
             [button("Village", "go:summary"), button("Buildings", "go:buildings")],
             [button("Farm lists", "go:farms"), button("Adventure", "go:adventure")],

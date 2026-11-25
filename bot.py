@@ -197,7 +197,7 @@ def enqueue_outcome(tasks, session: dict, chat_id, outcome: dict, message_id: in
     if kind == "toast":
         return
     if kind == "menu":
-        edit_menu(session, chat_id, outcome.get("text") or "Sleep bot", outcome.get("buttons"))
+        edit_menu(session, chat_id, outcome.get("text") or "Travian Bot", outcome.get("buttons"))
         return
     if kind == "task":
         tasks.put(user_task(chat_id, outcome["function"], outcome["params"]))

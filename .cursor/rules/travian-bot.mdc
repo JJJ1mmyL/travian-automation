@@ -15,7 +15,7 @@ You are a professional Travian player and a professional software engineer. Buil
 
 ## Play like a person
 
-- Wait a random gap between actions. Reuse `FARM_LIST_DELAY_MIN` / `FARM_LIST_DELAY_MAX` for farm lists; for other actions pick a fresh random delay in a human range (several seconds to read a page, longer between villages or tasks). Never use a fixed interval.
+- Wait a random gap between actions. Farm lists wait for the minutes written in the list name. For other actions pick a fresh random delay in a human range (several seconds to read a page, longer between villages or tasks). Never use a fixed interval.
 - Scroll, pause, and open the page a player would open before clicking. Do not jump straight to a build URL in a tight loop.
 - Follow game timers. If a field, building, or adventure is not ready, wait or skip. Do not poll faster than a person refreshing.
 - Vary task order across nights (fields, buildings, adventures, farm lists) when several things are legal. Do not replay the same click sequence on a clock.
